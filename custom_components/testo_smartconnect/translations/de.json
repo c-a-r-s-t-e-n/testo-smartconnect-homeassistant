@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Testo Smart Connect verbinden",
-        "description": "API-Key des Smart-Connect-API-Add-ons eingeben. Die Prüfung benötigt eine lesende Exportabfrage. Die erste Einrichtung kann einige Minuten dauern.",
+        "description": "API-Key des Smart-Connect-API-Add-ons eingeben. Für dein europäisches Konto wähle Europa (EU). [Testo Cloud öffnen](https://www.eu.smartconnect.testo.com/). Die Prüfung ruft Geräteinformationen ab; die erste Datensynchronisation kann einige Minuten dauern.",
         "data": {
           "api_key": "API-Key",
           "region": "Cloud-Region"
@@ -30,6 +30,15 @@
           "poll_minutes": "Messwerte abfragen alle (10–60 Minuten)",
           "stale_minutes": "Messwerte veraltet nach (15–1440 Minuten)"
         }
+      }
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Europa (EU)",
+        "am": "Amerika (AM)",
+        "ap": "Asien-Pazifik (AP)"
       }
     }
   }

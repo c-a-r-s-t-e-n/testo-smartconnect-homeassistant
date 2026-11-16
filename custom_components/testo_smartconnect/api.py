@@ -28,6 +28,10 @@ class ApiError(Exception):
     """Safe error without credentials, URLs or response bodies."""
 
 
+class ExpiredResultError(ApiError):
+    """Result no longer downloadable; a later refresh may submit again."""
+
+
 class AuthenticationError(ApiError):
     """Key invalid/expired."""
 
@@ -53,15 +57,30 @@ def parse_csv(raw: bytes) -> list[dict[str, str]]:
         raise ApiError("Invalid CSV result") from err
 
 
+def api_datetime(value: str) -> str:
+    """Send UTC seconds with Z, matching Testo's working export examples."""
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            raise ValueError("Timezone required")
+        return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    except (ValueError, TypeError, AttributeError):
+        raise ApiError("Invalid export time range") from None
+
+
 def safe_download_url(url: str) -> bool:
     """Only Testo's documented HTTPS S3 result storage; no arbitrary hosts."""
-    parts = urlsplit(url)
-    host = parts.hostname or ""
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+        host = parts.hostname or ""
+    except ValueError:
+        return False
     return (
         parts.scheme == "https"
         and parts.username is None
         and parts.password is None
-        and parts.port in (None, 443)
+        and port in (None, 443)
         and host.startswith("tds-")
         and ".s3" in host
         and host.endswith(".amazonaws.com")
@@ -80,6 +99,7 @@ class TestoApi:
         self.budget = budget if budget is not None else {}
         self.save_budget = save_budget
         self.pending: dict[str, str] = {}
+        self.pending_since: dict[str, float] = {}
         self._lock = asyncio.Lock()
         self.block_until = 0.0
 
@@ -106,6 +126,8 @@ class TestoApi:
                 allow_redirects=False,
                 timeout=aiohttp.ClientTimeout(total=45),
             ) as response:
+                if storage and response.status in (403, 404, 410):
+                    raise ExpiredResultError("Export download expired or unavailable")
                 if response.status == 401 and not storage:
                     raise AuthenticationError("Invalid or expired API key")
                 if response.status == 403 and not storage:
@@ -140,17 +162,24 @@ class TestoApi:
         """Submit once, bounded polling, download ALL parts. Resume pending jobs."""
         async with self._lock:
             endpoint = ENDPOINTS[kind]
+            clock = asyncio.get_running_loop().time()
+            if clock < self.block_until:
+                raise ApiError("API cooldown active")
+            if kind in self.pending and clock - self.pending_since.get(kind, clock) > 3300:
+                self.pending.pop(kind, None)
+                self.pending_since.pop(kind, None)
             if kind not in self.pending:
-                await self._reserve()
                 body: dict[str, Any] = {"options": {"result_file_format": "CSV"}}
                 if kind in ("measurements", "alarms"):
                     if start:
-                        body["date_time_from"] = start
+                        body["date_time_from"] = api_datetime(start)
                     if end:
-                        body["date_time_until"] = end
+                        body["date_time_until"] = api_datetime(end)
+                await self._reserve()
                 submitted = await self._request("POST", self.base + endpoint, body)
                 try:
                     self.pending[kind] = str(UUID(submitted["request_uuid"]))
+                    self.pending_since[kind] = clock
                 except (KeyError, ValueError, TypeError) as err:
                     raise ApiError("Missing request UUID") from err
             request_id = self.pending[kind]
@@ -171,9 +200,19 @@ class TestoApi:
             for url in urls:
                 if not isinstance(url, str) or not safe_download_url(url):
                     raise ApiError("Unsupported result storage host")
-                raw = await self._request("GET", url, storage=True)
-                rows.extend(parse_csv(raw))
+                try:
+                    raw = await self._request("GET", url, storage=True)
+                except ExpiredResultError:
+                    self.pending.pop(kind, None)
+                    self.pending_since.pop(kind, None)
+                    raise
+                rows.extend(await asyncio.to_thread(parse_csv, raw))
                 if len(rows) > 100000:
                     raise ApiError("Result exceeds 100000 row safety limit")
             self.pending.pop(kind, None)
+            self.pending_since.pop(kind, None)
+            if kind == "measurements" and rows:
+                required = {"sensor_uuid", "channel_no", "timestamp", "measurement"}
+                if any(not required.issubset(row) for row in rows):
+                    raise ApiError("Measurement export is missing required columns")
             return rows

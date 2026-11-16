@@ -91,9 +91,13 @@ def assignment_map(properties, objects, locations):
         if not isinstance(assignments, list):
             continue
         for assignment in assignments:
-            sensor = assignment.get("sensorChannel", {})
+            if not isinstance(assignment, dict):
+                continue
+            sensor = assignment.get("sensorChannel") or {}
+            if not isinstance(sensor, dict):
+                continue
             sid = sensor.get("sensorUuid")
-            prop = str(sensor.get("physicalProperty", {}).get("physicalValueId", "")).lower().removeprefix("pv_")
+            prop = str((sensor.get("physicalProperty") or {}).get("physicalValueId", "")).lower().removeprefix("pv_")
             candidates = [
                 p
                 for p in properties
@@ -113,11 +117,15 @@ def assignment_map(properties, objects, locations):
 
 def limits(assignment):
     """Expose all threshold rules; scalar thresholds only if unambiguous."""
-    config = assignment.get("configuration", {})
+    config = assignment.get("configuration") or {}
+    if not isinstance(config, dict):
+        config = {}
     rules = [
         r
-        for group in config.get("measurementAlarmConditionSet", [])
-        for r in group.get("measurementAlarmConditions", [])
+        for group in (config.get("measurementAlarmConditionSet") or [])
+        if isinstance(group, dict)
+        for r in (group.get("measurementAlarmConditions") or [])
+        if isinstance(r, dict)
     ]
     result = {"rules": rules}
     for label, kind in (("lower", "Lower limit"), ("upper", "Upper limit")):

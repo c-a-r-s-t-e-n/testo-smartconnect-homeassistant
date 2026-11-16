@@ -12,7 +12,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import ApiError, AuthenticationError, TestoApi
 from .const import CONF_INTERVAL, CONF_REGION, DEFAULT_INTERVAL, DOMAIN
-from .model import latest_measurements, timestamp
+from .entity import build_context
+from .model import channel_key, latest_measurements, timestamp
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,11 +24,14 @@ class TestoCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, entry):
         self.entry = entry
         self.store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}")
+        self.budget_store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.budget")
         self.cache = {}
         self.fetched = {}
         self.budget = {}
         self.errors = {}
         self.latest = {}
+        self.indexes = build_context({})
+        self.row_counts = {}
         self.api = None
         super().__init__(
             hass,
@@ -41,18 +45,29 @@ class TestoCoordinator(DataUpdateCoordinator):
         self.cache = saved.get("cache", {})
         self.fetched = saved.get("fetched", {})
         self.latest = saved.get("latest", {})
-        self.budget = saved.get("budget", {})
+        self.budget = await self.budget_store.async_load() or saved.get("budget", {})
+        self.row_counts = saved.get("row_counts", {})
+        self.indexes = build_context(self.cache)
         self.api = TestoApi(
             async_get_clientsession(self.hass),
             self.entry.data["api_key"],
             self.entry.data[CONF_REGION],
             self.budget,
-            self.save,
+            self.save_budget,
         )
+
+    async def save_budget(self):
+        await self.budget_store.async_save(self.budget)
 
     async def save(self):
         await self.store.async_save(
-            {"cache": self.cache, "fetched": self.fetched, "budget": self.budget, "latest": self.latest}
+            {
+                "cache": self.cache,
+                "fetched": self.fetched,
+                "budget": self.budget,
+                "latest": self.latest,
+                "row_counts": self.row_counts,
+            }
         )
 
     async def _async_update_data(self):
@@ -60,11 +75,11 @@ class TestoCoordinator(DataUpdateCoordinator):
         successful = 0
         periods = {
             "properties": 86400,
+            "measurements": self.update_interval.total_seconds(),
             "objects": 86400,
             "locations": 86400,
             "status": 1800,
             "alarms": 1800,
-            "measurements": self.update_interval.total_seconds(),
         }
         for kind, period in periods.items():
             last = timestamp(self.fetched.get(kind))
@@ -72,16 +87,17 @@ class TestoCoordinator(DataUpdateCoordinator):
                 continue
             try:
                 start = now - timedelta(hours=24)
-                if kind == "measurements" and last:
+                if kind == "measurements" and last and self.latest:
                     # One-hour overlap accommodates late processing; restart gap capped at 24h.
                     start = max(start, last - timedelta(hours=1))
                 rows = await self.api.query(kind, start.isoformat(), now.isoformat())
+                self.row_counts[kind] = len(rows)
                 self.cache[kind] = rows
                 self.fetched[kind] = now.isoformat()
                 self.errors.pop(kind, None)
                 if kind == "measurements":
                     self.latest = latest_measurements(rows, self.latest)
-                    keys = {f"{p['sensor_uuid']}:{p['channel_no']}" for p in self.cache.get("properties", [])}
+                    keys = {channel_key(p) for p in self.cache.get("properties", [])}
                     self.latest = {k: v for k, v in self.latest.items() if k in keys}
                     self.cache[kind] = []  # Persist only newest samples, not full history.
                 successful += 1
@@ -90,6 +106,7 @@ class TestoCoordinator(DataUpdateCoordinator):
             except ApiError as err:
                 self.errors[kind] = str(err)
                 _LOGGER.warning("Testo %s: %s", kind, err)
+        self.indexes = build_context(self.cache)
         await self.save()
         if not self.cache.get("properties"):
             raise UpdateFailed("No device properties available; check API access")

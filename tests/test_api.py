@@ -74,8 +74,8 @@ async def test_multipart_download_never_receives_key_and_no_double_scaling():
                     "data_urls": ["https://tds-x.s3.amazonaws.com/1", "https://tds-x.s3.amazonaws.com/2"],
                 }
             ),
-            Response(b"sensor_uuid,measurement\ns1,2.9\n"),
-            Response(b"sensor_uuid,measurement\ns2,-19.1\n"),
+            Response(b"sensor_uuid,channel_no,timestamp,measurement\ns1,0,2026-11-16T20:00:00Z,2.9\n"),
+            Response(b"sensor_uuid,channel_no,timestamp,measurement\ns2,0,2026-11-16T20:00:00Z,-19.1\n"),
         ]
     )
     save = AsyncMock()

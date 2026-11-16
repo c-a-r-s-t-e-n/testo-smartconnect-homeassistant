@@ -38,7 +38,7 @@ POST with `x-custom-api-key` starts an export; GET with request UUID polls for c
 - `measurement` is already scaled. Unit exponent is metadata, not an instruction to multiply again.
 - Measurement time uses UTC `timestamp`; local timestamps are display metadata.
 - Status records choose newest `status_time`; absent booleans are unknown, not false.
-- Messstellen `channel_assignments` and `measurement_alarm_configuration` are JSON inside CSV cells.
+- Measuring-object `channel_assignments` and `measurement_alarm_configuration` are JSON inside CSV cells.
 - Assignments use sensor UUID plus physical property; ambiguous mappings are deliberately unresolved.
 - Location names use `location_name`, not the `name` shown in some FAQ examples. No parent UUID was present.
 - Equipment/composite back references are retained in cache but not guessed into a location.
@@ -53,3 +53,9 @@ POST with `x-custom-api-key` starts an export; GET with request UUID polls for c
 - https://developers.testo.dev/smart-connect-api/concepts/
 
 Documentation checked 2026-11-16. Older examples use status v3; this implementation uses the verified v4 endpoint.
+
+## Version 0.1.1 request and diagnostics changes
+
+The OpenAPI JSON was reviewed at `https://developers.testo.dev/smart-connect-api/api_reference/swagger.json`. It confirms all six endpoint versions used here. The time schema uses `date-time`; the implementation now emits UTC seconds with a `Z` suffix, matching the successful PowerShell capture. The specification does not establish that offsets are invalid, so this change is a compatibility measure, not proof of the live failure cause.
+
+Shared lookup indexes are rebuilt once per coordinator refresh; CSV parsing runs outside the event loop. Measurement exports retain their actual row count separately from the latest-sample cache. Per-channel data-status entities distinguish API failure, missing samples, invalid samples, stale samples and valid current data. Raw measurements remain excluded from downloadable diagnostics.

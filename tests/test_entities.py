@@ -85,7 +85,7 @@ async def test_discovery_adds_new_channels_once():
     c.cache["properties"].append(dict(c.cache["properties"][0], channel_no="1"))
     callbacks[0]()
     assert add.call_count == 2
-    assert len(add.call_args.args[0]) == 5
+    assert len(add.call_args.args[0]) == 6
     assert first_count > 5
 
 
@@ -125,6 +125,7 @@ async def test_diagnostics_never_include_raw_identifiers_or_key():
 
     c = coordinator()
     c.errors = {}
+    c.row_counts = {}
     c.budget = {"posts": 6}
     entry = SimpleNamespace(runtime_data=c, data={"region": "eu", "api_key": "private-key"}, options={})
     result = await async_get_config_entry_diagnostics(None, entry)

@@ -9,12 +9,17 @@ from .const import CONF_STALE, DEFAULT_STALE, DOMAIN
 from .model import assignment_map, channel_key, latest_status, timestamp
 
 
-def context(coordinator):
-    cache = coordinator.cache
+def build_context(cache):
     props = {channel_key(r): r for r in cache.get("properties", [])}
     devices = {r["device_uuid"]: r for r in props.values()}
     assignments = assignment_map(list(props.values()), cache.get("objects", []), cache.get("locations", []))
     return props, devices, assignments, latest_status(cache.get("status", []))
+
+
+def context(coordinator):
+    """Reuse indexes built once by the coordinator for all entity reads."""
+    indexes = getattr(coordinator, "indexes", None)
+    return indexes if isinstance(indexes, tuple) else build_context(coordinator.cache)
 
 
 class TestoEntity(CoordinatorEntity):

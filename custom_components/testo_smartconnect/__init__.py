@@ -31,3 +31,5 @@ async def async_remove_entry(hass, entry):
     from .const import DOMAIN
 
     await Store(hass, 1, f"{DOMAIN}.{entry.entry_id}").async_remove()
+
+    await Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.budget").async_remove()

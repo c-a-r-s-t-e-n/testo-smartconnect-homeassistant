@@ -6,7 +6,14 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .api import ApiError, AuthenticationError, TestoApi
 from .const import CONF_INTERVAL, CONF_REGION, CONF_STALE, DEFAULT_INTERVAL, DEFAULT_STALE, DOMAIN, NAME
@@ -16,7 +23,11 @@ def user_schema():
     return vol.Schema(
         {
             vol.Required("api_key"): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
-            vol.Required(CONF_REGION, default="eu"): vol.In(["eu", "am", "ap"]),
+            vol.Required(CONF_REGION, default="eu"): SelectSelector(
+                SelectSelectorConfig(
+                    options=["eu", "am", "ap"], translation_key="region", mode=SelectSelectorMode.DROPDOWN
+                )
+            ),
         }
     )
 

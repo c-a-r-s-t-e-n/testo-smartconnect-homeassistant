@@ -22,7 +22,7 @@ DEVICE_METRICS = {
     "observed_alarms": ("Observed active alarms (24h window)", None, None),
     "last_alarm": ("Last observed alarm", None, SensorDeviceClass.TIMESTAMP),
 }
-CHANNEL_METRICS = ("measurement", "sample_time", "sample_age", "lower_limit", "upper_limit")
+CHANNEL_METRICS = ("data_status", "measurement", "sample_time", "sample_age", "lower_limit", "upper_limit")
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -46,6 +46,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 if uid not in known:
                     known.add(uid)
                     suffix = {
+                        "data_status": " data status",
                         "measurement": "",
                         "sample_time": " sample time",
                         "sample_age": " sample age",
@@ -128,8 +129,22 @@ class TestoSensor(TestoEntity, SensorEntity):
         ]
 
     @property
+    def data_status(self):
+        if not self.coordinator.healthy("measurements"):
+            return "api_error"
+        if not self.sample:
+            return "no_data"
+        if number(self.sample.get("measurement")) is None:
+            return "invalid_value"
+        if self.stale:
+            return "stale"
+        return "ok"
+
+    @property
     def native_value(self):
         metric = self.metric
+        if metric == "data_status":
+            return self.data_status
         if metric == "measurement":
             return number(self.sample.get("measurement"))  # Already scaled by Testo.
         if metric == "sample_time":
@@ -164,6 +179,9 @@ class TestoSensor(TestoEntity, SensorEntity):
     def extra_state_attributes(self):
         if self.channel:
             result = {
+                "data_status": self.data_status,
+                "last_successful_measurement_fetch": self.coordinator.fetched.get("measurements"),
+                "measurement_error": self.coordinator.errors.get("measurements"),
                 "channel_no": self.props.get("channel_no"),
                 "physical_property": self.props.get("channel_physical_property_name"),
                 "physical_extension": self.props.get("channel_physical_extension"),
