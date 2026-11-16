@@ -133,8 +133,8 @@ class TestoApi:
                 if not isinstance(result, dict):
                     raise ApiError("Invalid API response")
                 return result
-        except (aiohttp.ClientError, TimeoutError, ValueError) as err:
-            raise ApiError("Network or response decoding error") from err
+        except (aiohttp.ClientError, TimeoutError, ValueError):
+            raise ApiError("Network or response decoding error") from None
 
     async def query(self, kind: str, start=None, end=None) -> list[dict[str, Any]]:
         """Submit once, bounded polling, download ALL parts. Resume pending jobs."""

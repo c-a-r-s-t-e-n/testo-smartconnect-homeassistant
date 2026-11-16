@@ -1,6 +1,9 @@
 {
   "domain": "testo_smartconnect",
   "name": "Testo Smart Connect",
+  "categories": [
+    "sensors.temperature_humidity"
+  ],
   "codeowners": [
     "@c-a-r-s-t-e-n"
   ],
