@@ -63,7 +63,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_auth"
             except ApiError:
                 errors["base"] = "cannot_connect"
-        return self.async_show_form(step_id="user", data_schema=user_schema(), errors=errors)
+        return self.async_show_form(
+            step_id="user",
+            data_schema=user_schema(),
+            errors=errors,
+            description_placeholders={
+                "cloud_url": f"https://www.{(user_input or {}).get(CONF_REGION, 'eu')}.smartconnect.testo.com/"
+            },
+        )
 
     async def async_step_reauth(self, entry_data):
         return await self.async_step_user()

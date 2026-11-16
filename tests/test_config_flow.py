@@ -16,6 +16,7 @@ async def test_form_has_password_selector(tmp_path):
     flow.context = {"source": "user"}
     result = await flow.async_step_user()
     assert result["step_id"] == "user"
+    assert result["description_placeholders"]["cloud_url"] == "https://www.eu.smartconnect.testo.com/"
     assert "api_key" in str(result["data_schema"].schema)
 
 

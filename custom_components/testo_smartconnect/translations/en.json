@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Connect Testo Smart Connect",
-        "description": "Enter your Smart Connect API add-on key and select the region of your account. [Open Testo Cloud (Europe)](https://www.eu.smartconnect.testo.com/). Validation retrieves device information; the initial synchronization may take a few minutes.",
+        "description": "Enter your Smart Connect API add-on key and select the region of your account. [Open Testo Cloud]({cloud_url}). Validation retrieves device information; the initial synchronization may take a few minutes.",
         "data": {
           "api_key": "API key",
           "region": "Cloud region"

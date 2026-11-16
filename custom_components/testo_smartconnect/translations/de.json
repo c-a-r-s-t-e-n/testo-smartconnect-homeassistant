@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Testo Smart Connect verbinden",
-        "description": "API-Key des Smart-Connect-API-Add-ons eingeben. Für dein europäisches Konto wähle Europa (EU). [Testo Cloud öffnen](https://www.eu.smartconnect.testo.com/). Die Prüfung ruft Geräteinformationen ab; die erste Datensynchronisation kann einige Minuten dauern.",
+        "description": "API-Key des Smart-Connect-API-Add-ons eingeben. Für dein europäisches Konto wähle Europa (EU). [Testo Cloud öffnen]({cloud_url}). Die Prüfung ruft Geräteinformationen ab; die erste Datensynchronisation kann einige Minuten dauern.",
         "data": {
           "api_key": "API-Key",
           "region": "Cloud-Region"
