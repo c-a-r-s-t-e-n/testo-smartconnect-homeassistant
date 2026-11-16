@@ -1,4 +1,5 @@
 {
   "name": "Testo Smart Connect",
-  "homeassistant": "2025.3.0"
+  "homeassistant": "2025.3.0",
+  "hide_default_branch": true
 }

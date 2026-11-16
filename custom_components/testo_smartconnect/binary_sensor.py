@@ -15,6 +15,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
         props, devices, assignments, _ = context(coordinator)
         new = []
         for did in devices:
+            active_uid = (did, "active")
+            if active_uid not in known:
+                known.add(active_uid)
+                new.append(TestoBinary(coordinator, did, None, "active", "Logger active reported"))
             uid = (did, "power")
             if uid not in known:
                 known.add(uid)
@@ -22,6 +26,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for key, p in props.items():
             label = assignments.get(key, {}).get("name") or p.get("sensor_display_name") or "Channel"
             for metric, suffix in (
+                ("connected", "probe connected reported"),
                 ("stale", "data stale"),
                 ("invalid", "invalid measurement"),
                 ("limit", "outside configured limits"),
@@ -42,14 +47,28 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class TestoBinary(TestoEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
+    def __init__(self, coordinator, device_id, channel, metric, label):
+        super().__init__(coordinator, device_id, channel, metric, label)
+        if metric in ("active", "connected"):
+            self._attr_name = None
+            self._attr_translation_key = metric
+            if metric == "connected":
+                self._attr_translation_placeholders = {"channel": label.removesuffix(" probe connected reported")}
+            self._attr_entity_registry_enabled_default = False
+            self._attr_icon = "mdi:connection"
+
     @property
     def device_class(self):
+        if self.metric in ("active", "connected"):
+            return None
         return BinarySensorDeviceClass.POWER if self.metric == "power" else BinarySensorDeviceClass.PROBLEM
 
     @property
     def available(self):
         if not super().available:
             return False
+        if self.metric in ("active", "connected"):
+            return self.coordinator.healthy("properties")
         if self.metric == "power":
             return self.coordinator.healthy("status")
         if self.metric == "limit":
@@ -58,6 +77,8 @@ class TestoBinary(TestoEntity, BinarySensorEntity):
 
     @property
     def is_on(self):
+        if self.metric in ("active", "connected"):
+            return boolean(self.props.get("device_is_active" if self.metric == "active" else "sensor_is_connected"))
         if self.metric == "power":
             return boolean(self.status.get("is_powersupply_on"))
         if self.metric == "stale":

@@ -6,7 +6,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_STALE, DEFAULT_STALE, DOMAIN
-from .model import assignment_map, channel_key, latest_status, timestamp
+from .model import assignment_map, channel_key, latest_status, telemetry_indexes, timestamp
 
 
 def build_context(cache):
@@ -32,6 +32,20 @@ class TestoEntity(CoordinatorEntity):
         self.metric = metric
         self._attr_name = label
         self._attr_unique_id = f"{coordinator.entry.unique_id}_{device_id}_{channel or 'device'}_{metric}"
+
+    @property
+    def logger_summary(self):
+        summaries = getattr(self.coordinator, "summaries", None)
+        if not isinstance(summaries, dict):
+            summaries, _ = telemetry_indexes(
+                context(self.coordinator)[0],
+                self.coordinator.latest,
+                [],
+                self.coordinator.healthy("measurements"),
+                datetime.now(UTC),
+                self.coordinator.entry.options.get(CONF_STALE, DEFAULT_STALE),
+            )
+        return summaries.get(self.device_id, {})
 
     @property
     def props(self):

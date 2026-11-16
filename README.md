@@ -1,198 +1,141 @@
+![Testo Smart Connect — Home Assistant community integration](https://raw.githubusercontent.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant/main/docs/assets/header.png)
+
 # Testo Smart Connect for Home Assistant
 
 [![Validate](https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant/actions/workflows/validate.yml/badge.svg)](https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant/actions/workflows/validate.yml)
-[![Release](https://img.shields.io/github/v/release/c-a-r-s-t-e-n/testo-smartconnect-homeassistant?include_prereleases)](https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant/releases)
+[![Release](https://img.shields.io/github/v/release/c-a-r-s-t-e-n/testo-smartconnect-homeassistant)](https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![HACS](https://img.shields.io/badge/HACS-custom%20integration-41BDF5)](https://hacs.xyz/)
 
-An independent, read-only community integration for an **existing Home Assistant installation**. It retrieves logger measurements, device diagnostics, measurement-site assignments, configured thresholds and alarm events through the official Testo Smart Connect API.
+**Monitor your Testo loggers, understand missing readings, and build your own Home Assistant automations.** This independent community integration connects to the official Testo Smart Connect API. It works in an existing Home Assistant installation without a VPN, local gateway or YAML configuration.
 
-**Status: community preview, version 0.1.1.** API authentication, installation, device discovery and battery readings have been confirmed in a user's installation. Measurement availability is under investigation; this release improves request compatibility, recovery and diagnostics. Automated tests and replay of a private export do not replace an end-to-end live test. This project is not affiliated with Testo and does not replace Testo alarm delivery or HACCP records.
+| Measurements | Logger health | Alarm insight |
+|---|---|---|
+| Temperature, humidity and other exported physical values | Battery, radio quality, power and communication times | Configured thresholds and observed alarm events |
+| Sample time, age and per-channel data status | Clear explanations for missing or partial data | Immediate threshold comparisons for automations |
+| Automatic device and channel discovery | Channel counts and latest logger measurement | Explicit distinction from Testo's native alarm system |
 
 ## Requirements
 
-- Home Assistant **2025.3 or later**.
-- A Testo Smart Connect account with the paid **API add-on** and a valid API key.
-- Outbound HTTPS access to the regional Testo API and its signed S3 result storage.
-- HACS for the recommended installation method.
+- Home Assistant **2025.3 or newer**. The built-in **Marketplace** is available in Home Assistant 2026.11 and newer; use HACS on supported older installations.
+- Testo Smart Connect account, an active **API add-on**, and an API key.
+- Outbound HTTPS access to the regional Testo API and its signed S3 export storage.
 
-The EU export was verified with logger model codes `0572 2031`, `0572 2032`, `0572 2033` and `0572 2035`. Discovery uses API identifiers, not a fixed model list. AM and AP use the documented regional hosts but have not been tested with live accounts. Legacy Saveris APIs, mobile instruments without Smart Connect exports, and Polarfoxx are outside this project's scope.
+This is a read-only custom integration, not a Supervisor app. It is independently maintained and is not affiliated with Testo. Keep Testo's own alarms and compliance records enabled for their intended purpose.
 
-## Install with HACS
+<!-- ha-marketplace:exclude-start -->
+## Installation
 
-[![Open repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=c-a-r-s-t-e-n&repository=testo-smartconnect-homeassistant&category=integration)
+1. Add `https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant` to the Marketplace's custom repositories, type **Integration**. On older Home Assistant versions, use **HACS → Custom repositories**.
+2. Install **Testo Smart Connect**, selecting the latest release.
+3. Restart Home Assistant completely.
+4. Open **Settings → Devices & services → Add integration → Testo Smart Connect**.
 
-1. Open **HACS → Custom repositories**.
-2. Add `https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant`, category **Integration**.
-3. Download **Testo Smart Connect**. Enable pre-release versions if necessary and select the desired release.
-4. Restart Home Assistant completely.
-5. Open **Settings → Devices & services → Add integration → Testo Smart Connect**.
-6. Enter the API key and select **Europe (EU)**, **Americas (AM)** or **Asia Pacific (AP)** to match your account. The setup dialog includes a link to the [European Testo Cloud](https://www.eu.smartconnect.testo.com/).
-7. Allow several minutes for the initial exports to complete.
+For a manual installation, copy `custom_components/testo_smartconnect` to `/config/custom_components/testo_smartconnect`, restart and add the integration.
 
-This is a HACS custom repository, not a Supervisor add-on. It has not been admitted to the default HACS catalog. No YAML configuration, VPN or direct logger access is required.
+[Releases](https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant/releases) · [Report an issue](https://github.com/c-a-r-s-t-e-n/testo-smartconnect-homeassistant/issues/new/choose)
+<!-- ha-marketplace:exclude-end -->
 
-For manual installation, copy `custom_components/testo_smartconnect` to `/config/custom_components/testo_smartconnect`, restart Home Assistant, and follow steps 5–7.
+## Configuration
 
-## Update from 0.1.0
+Enter the API key and select **Europe (EU)**, **Americas (AM)** or **Asia Pacific (AP)** to match your Testo account. The setup dialog links to [Testo Cloud](https://www.eu.smartconnect.testo.com/). Allow several minutes for initial synchronization.
 
-Download **0.1.1** in HACS and restart Home Assistant. Keep the existing integration entry: API credentials, device identifiers and existing entity unique IDs are preserved. New diagnostic entities are discovered automatically. The stored API budget is migrated without resetting the monthly counter.
+Under **Configure**, adjust the measurement polling interval (10–60 minutes) and stale-data threshold (15–1,440 minutes; default 60). Use a threshold compatible with the logger's actual transmission interval. Supported setup, region labels and measurement-availability states are translated into English and German.
 
-The new per-channel **data status** sensor distinguishes `ok`, `api_error`, `no_data`, `invalid_value` and `stale`. Check this sensor if a measurement remains unavailable; do not delete the integration or repeatedly submit setup requests.
+## What you get
 
-## Data coverage
+### Per logger
 
-All six Smart Connect export domains are queried without a restrictive `$select`. Full field inventory and mapping rules: [docs/API.md](docs/API.md).
+- **Measurement availability**: a visible, translated status that distinguishes complete, partial, missing, stale or invalid data from an API request failure.
+- **Discovered channels**, **channels with samples**, **channels with current data**, and **latest measurement**.
+- Battery percentage, radio quality, reported external power, connection type and communication timestamps.
+- Firmware, measurement interval, communication interval, observed active alarm count and last observed alarm time.
+- Optional diagnostics: battery temperature, next communication, status timestamp and **logger active reported**.
 
-| Domain | Endpoint | Integration use |
-|---|---|---|
-| Devices and channels | `/v3/devices/properties` | Identity, names, model, firmware, units, capabilities and intervals |
-| Device status | `/v4/devices/status` | Battery, radio quality, power and communication times |
-| Measurements | `/v2/measurements` | Latest measurement per sensor and channel, unit and UTC timestamp |
-| Measuring objects | `/v1/measuring-objects` | Channel assignments, thresholds, delay and hysteresis metadata |
-| Locations | `/v1/locations` | Measurement-site names |
-| Alarms | `/v3/alarms` | Observed alarm events and latest event states in a rolling 24-hour window |
+### Per channel
 
-The current OpenAPI specification defines device status **v4**. Some narrative examples still use v3; this integration follows the specification and the verified export.
+- Measurement, actual sample time, sample age and translated data status.
+- Stale-data and invalid-value problem sensors.
+- Lower/upper limits and an instantaneous outside-limits problem sensor.
+- Optional **probe connected reported** diagnostic.
+- Attributes for sensor model/firmware, reported measuring interval, calibration capability, physical property/extension and cloud processing timestamp, where provided by the API.
 
-### Channel entities
+Optional diagnostics are disabled by default to keep the entity list focused. Enable them from the device's entity list. Existing entity unique IDs remain stable across updates. Home Assistant assigns entity IDs, so copy the actual IDs from your installation when building dashboards or automations.
 
-| Entity | Behavior |
+## A logger is detected but has no readings
+
+Device discovery and measurement delivery are separate. A logger can be correctly registered in Testo's API, with a working battery/status export, while its probes provide no recent measurements.
+
+| Availability state | Meaning and next step |
 |---|---|
-| Measurement | Numeric physical value; temperature and humidity use Home Assistant device classes |
-| Sample time | UTC time of the actual measurement |
-| Sample age | Minutes since that measurement |
-| Data status | `ok`, `api_error`, `no_data`, `invalid_value` or `stale` |
-| Data stale | Problem sensor; also on when no sample has ever been received |
-| Invalid measurement | Whether the latest sample contains an invalid numeric value; unknown without a sample |
-| Lower / upper limit | Unambiguous configured limits; disabled by default |
-| Outside configured limits | Immediate comparison with the configured limits; no Testo delay/hysteresis simulation |
+| Current measurements available | All discovered channels have recent, finite readings. |
+| Partial data | Some channels report current readings; others are unused, missing, stale or invalid. Check the per-channel data status. |
+| Detected in API — no measurements received | The device was discovered successfully, but there are no matching samples in the retained measurement window. Check probes and Testo Cloud. This does **not** mean authentication failed. |
+| Detected — measurements are stale | Samples exist but exceed the configured age threshold. Check the last measurement and logger transmission times. |
+| Detected — invalid measurements | No current valid channels remain and at least one latest sample is invalid. Check probe faults in Testo Cloud. |
+| Detected — measurement request failed | Measurement retrieval failed. Inspect `measurement_error` and the last successful fetch timestamp. |
 
-Measurement attributes include `data_status`, `measurement_error`, `last_successful_measurement_fetch`, `sample_time`, the physical property and reported channel metadata. Unavailable measurements remain unavailable instead of silently reporting zero or an old value as current.
+The logger status exposes counts of missing, stale and invalid channels. Definitions for unused channels are retained rather than silently hidden. A reported probe connection or logger-active flag is metadata, not proof of current communication. These flags update with the daily properties export.
 
-**A discovered channel is not proof of a working probe.** An export used during development contained 13 channel definitions but current measurements for only six. Unused, disconnected or faulty channels can correctly remain unavailable.
+Download sanitized diagnostics from the integration entry for endpoint errors, returned row counts, fetch times and budget information. Share those with an issue; never publish API keys, raw exports, Home Assistant storage files or signed download URLs.
 
-### Logger entities
+## Data coverage and supported devices
 
-Battery level, radio quality (percent, not RSSI/dBm), battery temperature if available, reported external power, last/next communication, status timestamp, connection type, firmware, measurement/communication intervals, observed active alarm count and last observed alarm time.
+The integration uses all six official Smart Connect export domains:
 
-Battery temperature, next communication and status timestamp are disabled by default. Enable them in the entity registry if needed. Empty boolean or numeric fields remain unknown. Some diagnostics are visible on the device page rather than the automatic overview dashboard.
+| Endpoint | Purpose |
+|---|---|
+| `/v3/devices/properties` | Devices, sensors, channels, units, capabilities and intervals |
+| `/v4/devices/status` | Battery, radio quality, power and communication |
+| `/v2/measurements` | Latest physical value per sensor and channel |
+| `/v1/measuring-objects` | Channel assignments and configured threshold rules |
+| `/v1/locations` | Measurement-site names |
+| `/v3/alarms` | Alarm events within the requested time window |
 
-Home Assistant assigns entity IDs from names and existing registry entries. Copy actual IDs from Developer Tools; examples below are placeholders. Device links open the matching regional Testo Cloud portal. Entity labels are currently English; setup and options are translated into English and German.
+Discovery is dynamic. Verified export schemas include logger model codes `0572 2031`, `0572 2032`, `0572 2033` and `0572 2035`. EU has been checked against an actual account export; AM/AP hosts follow the documented API but have not been verified with live accounts. This integration does not support legacy Saveris APIs, Polarfoxx or mobile instruments whose data is absent from Smart Connect.
 
-## Polling, latency and API budget
+The API's physical measurement is already scaled; the unit exponent is not applied twice. Missing or invalid values are never converted to zero. Sensor UUID **and channel number** identify readings. [Complete field inventory and mapping rules](docs/API.md).
 
-| Export | Default interval |
+## Refresh intervals and API quota
+
+| Data | Default interval |
 |---|---:|
-| Measurements | 10 minutes, configurable from 10–60 |
-| Device status | 30 minutes |
-| Alarms | 30 minutes, querying the preceding 24 hours |
-| Devices, measuring objects, locations | Each once per 24 hours |
+| Measurements, all loggers in one export | 10 minutes |
+| Device status and alarm events | 30 minutes each |
+| Devices, measuring objects and locations | 24 hours each |
 
-All loggers share one export per domain; there is no per-device polling. These defaults require approximately **7,533 POST requests in a 31-day month**, plus setup, recovery and retries. Longer measurement intervals also delay the scheduler's other checks, so status/alarm intervals are minimum ages rather than independent timers.
+The defaults use approximately **7,533 POST requests per 31-day month**, plus setup and recovery. Testo documents **10,000 POST requests per account per month**; GET polling and downloads do not count. A persisted local counter stops new exports at 9,500. Other API clients and setup validation are not included in this local count.
 
-Testo documents a limit of **10,000 POST requests per account per month**. GET polling and result downloads do not consume that POST allowance. A persisted local counter stops new exports at 9,500 requests. It does not know requests made by other clients or setup validation. Month rollover uses UTC; the server remains authoritative.
+Longer measurement intervals also delay the shared scheduler's other checks. Freshness depends on logger transmission and cloud processing; this is not a live stream. Initial/recovery queries cover up to 24 hours, then overlap successful retrieval by one hour. Only the latest sample per channel is retained; historical data is not backfilled into Recorder.
 
-- Export requests use UTC timestamps formatted as `YYYY-MM-DDTHH:MM:SSZ`, matching the successful diagnostic script.
-- Initial measurement retrieval covers 24 hours. Subsequent retrieval overlaps the last successful fetch by one hour; recovery is capped at 24 hours. If no channel samples exist, retrieval continues to use the 24-hour window.
-- Only the newest sample per sensor/channel is retained. Historical values are not backfilled into Home Assistant Recorder.
-- The default stale threshold is 60 minutes, configurable from 15–1,440 minutes. Time diagnostics update on the polling cycle.
-- Actual freshness also depends on logger transmission intervals and Testo processing latency. This API is not a real-time stream.
+## Performance and reliability
 
-## Reliability and performance
+- One shared request per data domain, with no per-logger API polling.
+- Bounded asynchronous export polling; pending jobs resume and expired results recover on a later refresh.
+- CSV parsing outside the event loop, bounded file/row limits and required-field validation.
+- Shared lookup indexes rebuilt only when their source metadata changes; logger summaries and alarm grouping computed once per refresh.
+- Lightweight persistent quota reservations; full cache writes only after successful retrieval.
+- Independent endpoint errors, a rate-limit cooldown, protected signed downloads and explicit stale-data handling.
 
-The client submits an asynchronous export, polls its request UUID with bounded backoff, then reads **all** result files. Pending jobs are resumed within the running process. Jobs older than 55 minutes and expired storage results are discarded so a later refresh can submit a replacement. POST requests are never automatically retried within the same query.
+[Architecture and operational details](docs/API.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-Queries are serialized to keep account load predictable. Measurements are fetched immediately after device metadata, before optional metadata and alarm exports. CSV decoding/parsing runs in a worker thread. Device, channel, assignment and status indexes are shared across entities and rebuilt once per refresh. Request-budget writes use a small separate store instead of repeatedly writing the entire metadata cache.
+## Alarm behavior
 
-The client enforces bounded HTTP timeouts, a five-minute cooldown for HTTP 429, local quota protection, HTTPS storage-host checks, no redirects, and limits of 100 result files, 20 MiB per file and 100,000 rows per export. Exceeding a limit fails explicitly rather than accepting a partial result. Required measurement columns are validated. Failed domains are reported independently, allowing battery readings to remain available during a measurement-export failure.
+Observed alarms use a rolling **24-hour event window**, grouped by source event and latest status change. A later `Ok` resolves the corresponding observed event. The count cannot represent every globally active alarm: an older unresolved event may be absent. Zero is not a guarantee of alarm-free equipment.
 
-Measurement values are already scaled by Testo. `channel_physical_unit_exponent` is not applied again. NaN, infinity and invalid values are never converted to zero. Sensor UUID **and channel number** form the measurement key. The newest sample wins, including an invalid newest sample; an older valid value is never substituted.
+The threshold problem sensor compares a current reading immediately. Testo delay/hysteresis rules are exposed as attributes but are not simulated. Ambiguous assignments do not produce invented scalar limits. Testo's native alarm delivery remains authoritative.
 
-## Troubleshooting missing measurements
+## Updates and removal
 
-Open the logger's device page and inspect **data status**, sample time and the measurement attributes.
+Install updates through the Marketplace or HACS, then restart Home Assistant. Keep the integration entry to preserve credentials and entity registry customization. API-key reauthentication verifies the same account and region.
 
-| Data status | Meaning | Next step |
-|---|---|---|
-| `ok` | A recent finite measurement is present | Inspect the corresponding measurement entity and dashboard selection |
-| `api_error` | Measurement export failed or has not completed successfully | Read `measurement_error`; wait for the next poll, check quota or download diagnostics |
-| `no_data` | Successful export, no matching sample for this channel | Check the probe and channel in Testo Cloud; unused channels are expected |
-| `invalid_value` | Latest row is not a finite numeric value | Check probe errors in Testo Cloud |
-| `stale` | Latest sample exceeds the configured age threshold | Check actual sample time and logger communication before changing the threshold |
+Removing the integration removes its private cache and local budget store; uninstall downloaded files separately in the Marketplace/HACS. Recorder history follows Home Assistant retention settings. Protect the Home Assistant host and backups because they contain the API key.
 
-Download diagnostics from **Settings → Devices & services → Testo Smart Connect → Download diagnostics**. They contain endpoint row counts, fetch times, safe errors, structural field names and local budget information, not the API key, signed URLs or raw device identifiers. In 0.1.0 the measurement row count was misleadingly zero because the raw history was deliberately discarded; 0.1.1 records the actual export count separately.
+<!-- ha-marketplace:exclude-start -->
+## Development and support
 
-Battery readings alone prove that the status endpoint works; they do not prove that the measurement export succeeded. Do not publish raw diagnostic scripts/exports, API keys, Home Assistant storage files or signed download URLs in issues.
+CI tests both the minimum supported Home Assistant baseline and Home Assistant 2026.11.2, alongside Ruff, Home Assistant hassfest, HACS validation and release packaging. Tests exercise API transport, recovery, mapping, configuration and Home Assistant entities using synthetic data. Passing CI does not certify every device, account or network; report runtime problems with sanitized diagnostics.
 
-## Alarm semantics
-
-Alarm events are grouped by `source_alarm_event_uuid` (falling back to `uuid`); the latest status change determines the observed event state. A later `Ok` resolves the corresponding observed alarm.
-
-**The count is not a complete global alarm state.** An unresolved alarm that started outside the queried 24-hour window can be absent. Zero means no active alarm events observed in that window, not a guarantee of alarm-free equipment. Testo's native alarm system remains authoritative.
-
-The separate threshold problem sensor performs an instantaneous comparison. Delay and hysteresis rules are exposed as attributes but are not simulated. Ambiguous assignments or multiple equivalent limit rules do not produce invented scalar limits.
-
-## Automation example
-
-Replace both entity/service placeholders with IDs from your own installation. The notification action requires the Home Assistant Companion App.
-
-```yaml
-alias: "Testo: stale measurement data"
-triggers:
-  - trigger: state
-    entity_id: binary_sensor.REPLACE_WITH_DATA_STALE
-    to: "on"
-    for: "00:10:00"
-actions:
-  - action: notify.mobile_app_REPLACE_WITH_PHONE
-    data:
-      title: "Testo: measurement data unavailable"
-      message: "The measurement site is no longer providing recent data."
-mode: single
-```
-
-A state trigger does not cover every startup or unavailable-state scenario. Add startup/availability handling for your deployment; a Home Assistant restart resets pending `for` timers.
-
-## Dashboard example
-
-```yaml
-type: entities
-title: Cold storage
-entities:
-  - sensor.REPLACE_WITH_TEMPERATURE
-  - sensor.REPLACE_WITH_SAMPLE_TIME
-  - sensor.REPLACE_WITH_DATA_STATUS
-  - sensor.REPLACE_WITH_BATTERY
-  - binary_sensor.REPLACE_WITH_DATA_STALE
-```
-
-## Security and maintenance
-
-The API key is stored in the Home Assistant config entry. Protect the host and backups. API credentials are sent only to the selected Testo API host, never to signed S3 downloads. Diagnostics and logged errors avoid credentials and response bodies. Private exports are not included in this repository.
-
-To rotate a key, use the reauthentication flow when Home Assistant requests it; the replacement must belong to the same account and region. Removing the integration removes its private cache and budget store. Downloaded HACS files are removed separately in HACS. Recorder history follows Home Assistant retention settings.
-
-Report reproducible issues with integration/HA versions, the affected data status, and sanitized diagnostics. See [SECURITY.md](SECURITY.md) for security reports and [CONTRIBUTING.md](CONTRIBUTING.md) for development.
-
-## Development and validation
-
-```bash
-python -m pip install -r requirements-dev.txt
-ruff check .
-ruff format --check .
-pytest -q
-```
-
-CI runs tests on Python 3.13, Ruff, Home Assistant hassfest and HACS validation. Release automation verifies the tag against the manifest version and builds the integration ZIP. Tests use synthetic data and actual Home Assistant classes. A private export is used only for local schema/replay checks and is never committed.
-
-## Documentation and license
-
-- [API mapping](docs/API.md)
-- [Changelog](CHANGELOG.md)
-- [Testo API reference](https://developers.testo.dev/smart-connect-api/api_reference/)
-- [Testo API FAQ](https://developers.testo.dev/smart-connect-api/faq/)
-- [Testo asynchronous API concepts](https://developers.testo.dev/smart-connect-api/concepts/)
-- [Original community icon](docs/BRANDING.md)
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md) · [Brand assets](docs/BRANDING.md)
 
 MIT licensed. Testo trademarks remain the property of their respective owners.
+<!-- ha-marketplace:exclude-end -->

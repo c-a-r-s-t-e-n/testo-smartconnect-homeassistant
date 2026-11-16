@@ -41,5 +41,50 @@
         "ap": "Asien-Pazifik (AP)"
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "logger_status": {
+        "name": "Messdatenverfügbarkeit",
+        "state": {
+          "ok": "Aktuelle Messdaten verfügbar",
+          "partial": "Teilweise Messdaten – nicht alle Kanäle liefern aktuelle Werte",
+          "no_data": "In der API erkannt – keine Messdaten vorhanden",
+          "stale": "Erkannt – Messdaten sind veraltet",
+          "invalid_value": "Erkannt – ungültige Messwerte",
+          "api_error": "Erkannt – Messdatenabruf fehlgeschlagen"
+        }
+      },
+      "channels_total": {
+        "name": "Erkannte Kanäle"
+      },
+      "channels_reporting": {
+        "name": "Kanäle mit Messdaten"
+      },
+      "channels_current": {
+        "name": "Kanäle mit aktuellen Werten"
+      },
+      "last_measurement": {
+        "name": "Neueste Messung"
+      },
+      "data_status": {
+        "name": "{channel} Datenstatus",
+        "state": {
+          "ok": "Aktuelle Messdaten verfügbar",
+          "no_data": "In der API erkannt – keine Messdaten vorhanden",
+          "stale": "Erkannt – Messdaten sind veraltet",
+          "invalid_value": "Erkannt – ungültige Messwerte",
+          "api_error": "Erkannt – Messdatenabruf fehlgeschlagen"
+        }
+      }
+    },
+    "binary_sensor": {
+      "active": {
+        "name": "Logger aktiv laut API"
+      },
+      "connected": {
+        "name": "{channel} Fühler verbunden laut API"
+      }
+    }
   }
 }

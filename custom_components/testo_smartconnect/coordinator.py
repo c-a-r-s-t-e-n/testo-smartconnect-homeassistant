@@ -11,9 +11,9 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import ApiError, AuthenticationError, TestoApi
-from .const import CONF_INTERVAL, CONF_REGION, DEFAULT_INTERVAL, DOMAIN
+from .const import CONF_INTERVAL, CONF_REGION, CONF_STALE, DEFAULT_INTERVAL, DEFAULT_STALE, DOMAIN
 from .entity import build_context
-from .model import channel_key, latest_measurements, timestamp
+from .model import channel_key, latest_measurements, telemetry_indexes, timestamp
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,6 +32,8 @@ class TestoCoordinator(DataUpdateCoordinator):
         self.latest = {}
         self.indexes = build_context({})
         self.row_counts = {}
+        self.summaries = {}
+        self.alarms_by_device = {}
         self.api = None
         super().__init__(
             hass,
@@ -73,6 +75,7 @@ class TestoCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         now = datetime.now(UTC)
         successful = 0
+        context_changed = False
         periods = {
             "properties": 86400,
             "measurements": self.update_interval.total_seconds(),
@@ -91,6 +94,7 @@ class TestoCoordinator(DataUpdateCoordinator):
                     # One-hour overlap accommodates late processing; restart gap capped at 24h.
                     start = max(start, last - timedelta(hours=1))
                 rows = await self.api.query(kind, start.isoformat(), now.isoformat())
+                context_changed |= kind in ("properties", "objects", "locations", "status")
                 self.row_counts[kind] = len(rows)
                 self.cache[kind] = rows
                 self.fetched[kind] = now.isoformat()
@@ -106,8 +110,18 @@ class TestoCoordinator(DataUpdateCoordinator):
             except ApiError as err:
                 self.errors[kind] = str(err)
                 _LOGGER.warning("Testo %s: %s", kind, err)
-        self.indexes = build_context(self.cache)
-        await self.save()
+        if context_changed:
+            self.indexes = build_context(self.cache)
+        if successful:
+            await self.save()
+        self.summaries, self.alarms_by_device = telemetry_indexes(
+            self.indexes[0],
+            self.latest,
+            self.cache.get("alarms", []),
+            self.healthy("measurements"),
+            now,
+            self.entry.options.get(CONF_STALE, DEFAULT_STALE),
+        )
         if not self.cache.get("properties"):
             raise UpdateFailed("No device properties available; check API access")
         if successful == 0 and len(self.errors) == len(periods):

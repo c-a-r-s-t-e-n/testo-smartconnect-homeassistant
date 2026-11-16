@@ -8,13 +8,21 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.13'
+            homeassistant: '2025.3.4'
+          - python: '3.14'
+            homeassistant: '2026.11.2' 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python }}
           cache: pip
-      - run: pip install -r requirements-dev.txt
+      - run: pip install -r requirements-test.txt "homeassistant==${{ matrix.homeassistant }}"
       - run: ruff check .
       - run: ruff format --check .
       - run: python -m compileall -q custom_components tests

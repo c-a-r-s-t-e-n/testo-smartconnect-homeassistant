@@ -41,5 +41,50 @@
         "ap": "Asia Pacific (AP)"
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "logger_status": {
+        "name": "Measurement availability",
+        "state": {
+          "ok": "Current measurements available",
+          "partial": "Partial data — some channels have no current readings",
+          "no_data": "Detected in API — no measurements received",
+          "stale": "Detected — measurements are stale",
+          "invalid_value": "Detected — invalid measurements",
+          "api_error": "Detected — measurement request failed"
+        }
+      },
+      "channels_total": {
+        "name": "Discovered channels"
+      },
+      "channels_reporting": {
+        "name": "Channels with samples"
+      },
+      "channels_current": {
+        "name": "Channels with current data"
+      },
+      "last_measurement": {
+        "name": "Latest measurement"
+      },
+      "data_status": {
+        "name": "{channel} data status",
+        "state": {
+          "ok": "Current measurements available",
+          "no_data": "Detected in API — no measurements received",
+          "stale": "Detected — measurements are stale",
+          "invalid_value": "Detected — invalid measurements",
+          "api_error": "Detected — measurement request failed"
+        }
+      }
+    },
+    "binary_sensor": {
+      "active": {
+        "name": "Logger active reported"
+      },
+      "connected": {
+        "name": "{channel} probe connected reported"
+      }
+    }
   }
 }

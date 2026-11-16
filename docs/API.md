@@ -59,3 +59,9 @@ Documentation checked 2026-11-16. Older examples use status v3; this implementat
 The OpenAPI JSON was reviewed at `https://developers.testo.dev/smart-connect-api/api_reference/swagger.json`. It confirms all six endpoint versions used here. The time schema uses `date-time`; the implementation now emits UTC seconds with a `Z` suffix, matching the successful PowerShell capture. The specification does not establish that offsets are invalid, so this change is a compatibility measure, not proof of the live failure cause.
 
 Shared lookup indexes are rebuilt once per coordinator refresh; CSV parsing runs outside the event loop. Measurement exports retain their actual row count separately from the latest-sample cache. Per-channel data-status entities distinguish API failure, missing samples, invalid samples, stale samples and valid current data. Raw measurements remain excluded from downloadable diagnostics.
+
+## Logger summaries and API-reported metadata
+
+Logger summaries are derived locally without extra API requests. Defined channels are counted separately from channels with retained samples and channels with current, valid samples. `no_data` is only used after a successful measurement export; an export failure is `api_error`. Summaries include missing, stale and invalid counts, and the newest sample timestamp. Optional binary diagnostics map `device_is_active` and `sensor_is_connected` using three-state boolean parsing. These metadata fields are not real-time connectivity probes.
+
+Alarm grouping runs once per coordinator refresh, not on every entity-property read. Metadata indexes are retained when only measurements/alarms change. No-op refreshes do not rewrite the persistent cache.

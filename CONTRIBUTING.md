@@ -1,13 +1,16 @@
 # Contributing
 
-Open an issue describing expected behavior, integration/HA versions and sanitized field names.
-Never attach raw customer exports, API keys, serial numbers or signed storage links.
+Use Python 3.13 with the minimum Home Assistant baseline:
 
-Use Python 3.13 and `requirements-dev.txt`. Run `ruff check .`, `ruff format --check .`
-and `pytest -q`. Add synthetic regression tests for parser, time, identity and quota changes.
-Do not hard-code logger names, tenant IDs or serial numbers. Preserve existing unique IDs.
-Update README, API mapping and changelog for changed behavior. Do not add device writes.
+```bash
+python -m pip install -r requirements-dev.txt
+ruff check .
+ruff format --check .
+pytest -q
+```
 
-Release tags must match manifest.json (e.g. v0.1.0). Release workflow tests before packaging
-and creates a prerelease. HACS custom repository installation uses the standard component
-folder. Check all Validate jobs before tagging a release.
+CI also runs the suite on Python 3.14 with Home Assistant 2026.11.2. Integration runtime dependencies are supplied by Home Assistant. Pillow is only needed to regenerate branding with `python scripts/build_branding.py`.
+
+Add regression tests for behavior changes. Use synthetic fixtures; do not commit private exports, API keys, signed download URLs or device/account identifiers. Keep entity unique IDs stable. Distinguish missing data, stale data, invalid data and API failures. Document any changes to quota consumption or alarm semantics.
+
+Before publishing, verify Ruff, tests on both baselines, hassfest and HACS checks. Release tags must match the manifest version. The release workflow builds the component-only ZIP and publishes it on the matching GitHub release.

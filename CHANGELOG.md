@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0 — 2026-11-16
+
+- Publish a regular versioned release for Marketplace/HACS installation.
+- Add original light/dark and high-resolution brand assets, a presentation header and Marketplace-aware README sections.
+- Add translated logger measurement availability, discovered/reporting/current channel counts and latest measurement time.
+- Add optional API-reported logger-active and probe-connected diagnostics, plus sensor model, firmware, interval and processing-time attributes.
+- Share logger summaries and alarm indexes across entities; rebuild lookup indexes only when their source metadata changes and skip cache writes on no-op refreshes.
+- Bound CSV row parsing earlier and expand regression coverage for all logger states, unknown metadata, identifier compatibility and performance behavior.
+- Replace development narrative with current product documentation and a dedicated troubleshooting guide.
+
 ## 0.1.1 — 2026-11-16
 
 - Replace raw region codes with translated dropdown labels and add a Testo Cloud link to setup.

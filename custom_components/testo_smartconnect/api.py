@@ -49,7 +49,11 @@ def parse_csv(raw: bytes) -> list[dict[str, str]]:
         reader = csv.DictReader(io.StringIO(text))
         if not reader.fieldnames or len(reader.fieldnames) < 2:
             raise ValueError("Not tabular CSV")
-        rows = list(reader)
+        rows = []
+        for row in reader:
+            rows.append(row)
+            if len(rows) > 100000:
+                raise ApiError("Result exceeds 100000 row safety limit")
         if any(None in row for row in rows):
             raise ValueError("Malformed CSV")
         return rows

@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible problem with Testo Smart Connect.
+body:
+  - type: markdown
+    attributes:
+      value: Do not include API keys, raw Testo exports, signed URLs or Home Assistant storage files. Attach sanitized integration diagnostics if available.
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+    validations:
+      required: true
+  - type: input
+    id: home_assistant_version
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior and reproduction steps
+      description: Include the logger/channel data status and safe error message, if applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
