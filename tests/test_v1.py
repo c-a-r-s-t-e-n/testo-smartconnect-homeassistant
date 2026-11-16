@@ -96,6 +96,7 @@ def test_missing_metadata_is_unknown_not_false():
 @pytest.mark.asyncio
 async def test_measurements_only_refresh_reuses_metadata_and_noop_skips_storage(tmp_path):
     entry = SimpleNamespace(entry_id="performance", options={}, data={})
+    entry.async_on_unload = lambda fn: None
     c = Coordinator(HomeAssistant(str(tmp_path)), entry)
     c.cache = {"properties": list(PROPS.values())}
     c.indexes = build_context(c.cache)

@@ -96,6 +96,7 @@ async def test_coordinator_schedule_and_partial_failure(tmp_path):
 
     hass = HomeAssistant(str(tmp_path))
     entry = SimpleNamespace(entry_id="test", options={}, data={"api_key": "synthetic", "region": "eu"})
+    entry.async_on_unload = lambda fn: None
     c = TestoCoordinator(hass, entry)
     c.save = AsyncMock()
     c.api = SimpleNamespace(query=AsyncMock())

@@ -123,6 +123,7 @@ async def test_csv_to_coordinator_to_measurement_and_shared_indexes(tmp_path):
     entry = SimpleNamespace(
         entry_id="test", unique_id="synthetic", options={}, data={"region": "eu", "api_key": "secret"}
     )
+    entry.async_on_unload = lambda fn: None
     c = Coordinator(HomeAssistant(str(tmp_path)), entry)
     c.save = AsyncMock()
     props = [
@@ -165,6 +166,7 @@ async def test_csv_to_coordinator_to_measurement_and_shared_indexes(tmp_path):
 @pytest.mark.asyncio
 async def test_empty_history_keeps_full_recovery_window(tmp_path):
     entry = SimpleNamespace(entry_id="test", options={}, data={})
+    entry.async_on_unload = lambda fn: None
     c = Coordinator(HomeAssistant(str(tmp_path)), entry)
     c.save = AsyncMock()
     c.cache["properties"] = [{"device_uuid": "d", "sensor_uuid": "s", "channel_no": "0"}]
