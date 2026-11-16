@@ -1,0 +1,36 @@
+{
+  "title": "Testo Smart Connect",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Testo Smart Connect verbinden",
+        "description": "API-Key des Smart-Connect-API-Add-ons eingeben. Die Prüfung benötigt eine lesende Exportabfrage. Die erste Einrichtung kann einige Minuten dauern.",
+        "data": {
+          "api_key": "API-Key",
+          "region": "Cloud-Region"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Der API-Key ist ungültig oder abgelaufen.",
+      "cannot_connect": "Testo-Daten konnten nicht abgerufen werden. Region, Berechtigungen und Kontingent prüfen.",
+      "no_devices": "Keine Geräte oder Konto-ID zurückgegeben."
+    },
+    "abort": {
+      "already_configured": "Dieses Konto ist bereits eingerichtet.",
+      "reauth_successful": "API-Key aktualisiert.",
+      "wrong_account": "Einen Key desselben Testo-Kontos und derselben Region verwenden."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Abfragen und Datenalter",
+        "data": {
+          "poll_minutes": "Messwerte abfragen alle (10–60 Minuten)",
+          "stale_minutes": "Messwerte veraltet nach (15–1440 Minuten)"
+        }
+      }
+    }
+  }
+}

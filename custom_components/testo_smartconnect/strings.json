@@ -1,0 +1,36 @@
+{
+  "title": "Testo Smart Connect",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Testo Smart Connect",
+        "description": "Enter a Smart Connect API add-on key. Validation makes one read-only export request. Initial setup may take a few minutes.",
+        "data": {
+          "api_key": "API key",
+          "region": "Cloud region"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The API key is invalid or expired.",
+      "cannot_connect": "Unable to retrieve Testo data. Check region, API permissions and quota.",
+      "no_devices": "No devices or account identity were returned."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "API key updated.",
+      "wrong_account": "Use a key belonging to the same Testo account and region."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling and freshness",
+        "data": {
+          "poll_minutes": "Measurement poll interval (10–60 minutes)",
+          "stale_minutes": "Consider measurements stale after (15–1440 minutes)"
+        }
+      }
+    }
+  }
+}
